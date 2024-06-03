@@ -424,7 +424,7 @@
         const storedName = localStorage.getItem('mandalaName');
         if (storedName) {
             const days = JSON.parse(localStorage.getItem('meditationHistory')).length + 1;
-            showToast(`Namaskaram ${storedName} to ${JSON.parse(localStorage.getItem('mandalaDetails')).name}. This is your day ${days} of meditation.`);
+            showToast(`Namaskaram ${storedName} to ${JSON.parse(localStorage.getItem('MandalProgress')).name}. This is your day ${days} of meditation.`);
         }
 
         checkMandalCompletion();
@@ -522,7 +522,7 @@
         const history = JSON.parse(localStorage.getItem('meditationHistory')) || [];
         const historyContainer = document.getElementById('meditationHistory');
         historyContainer.innerHTML = '';
-        let currentMandal = JSON.parse(localStorage.getItem('mandalaDetails')).name;
+        let currentMandal = JSON.parse(localStorage.getItem('MandalProgress')).name;
         let day = 1;
         history.forEach((entry, index) => {
             const isCurrentMandal = entry.name === currentMandal;
