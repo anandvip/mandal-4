@@ -63,7 +63,6 @@
         }
 
         button {
-          width: fit-content;
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -75,7 +74,6 @@
 
         button:hover {
             background-color: #0056b3;
-          
         }
 
         .intrusive-toast {
@@ -207,7 +205,6 @@
 
         button {
             background-color: #9b5de5;
-          width: fit-content;
         }
 
         body {
@@ -421,10 +418,10 @@
         displayMeditationHistory();
         displayMandalHistory();
 
-        const storedName = localStorage.getItem('mandalaName');
+        const storedName = localStorage.getItem('userName');
         if (storedName) {
             const days = JSON.parse(localStorage.getItem('meditationHistory')).length + 1;
-            showToast(`Namaskaram ${storedName} to ${JSON.parse(localStorage.getItem('MandalProgress')).name}. This is your day ${days} of meditation.`);
+            showToast(`Namaskaram ${storedName} to ${JSON.parse(localStorage.getItem('mandalProgress'))[0].name}. This is your day ${days} of meditation.`);
         }
 
         checkMandalCompletion();
@@ -522,19 +519,29 @@
         const history = JSON.parse(localStorage.getItem('meditationHistory')) || [];
         const historyContainer = document.getElementById('meditationHistory');
         historyContainer.innerHTML = '';
-        let currentMandal = JSON.parse(localStorage.getItem('MandalProgress')).name;
+        let currentMandal = JSON.parse(localStorage.getItem('mandalProgress'))[0].name;
         let day = 1;
         history.forEach((entry, index) => {
             const isCurrentMandal = entry.name === currentMandal;
             const entryElement = document.createElement('div');
             entryElement.classList.add('medHlog');
-            entryElement.innerHTML = `
-                <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
-                <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
-                <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
-                <span class="session-notes" contenteditable="true" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
-                <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
-            `;
+            if (isCurrentMandal) {
+                entryElement.innerHTML = `
+                    <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
+                    <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
+                    <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
+                    <span class="session-notes" contenteditable="true" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
+                    <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
+                `;
+            } else {
+                entryElement.innerHTML = `
+                    <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
+                    <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
+                    <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
+                    <span class="session-notes collapsed" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
+                    <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
+                `;
+            }
             historyContainer.appendChild(entryElement);
             day++;
         });
@@ -604,7 +611,7 @@
 
         if (mandalaHeaderElement) {
             mandalaHeaderElement.textContent = `${mandalaName} - day ${daysSinceStart} in`;
-        } else {
+                } else {
             console.error('Element with ID "mandalOngoing" not found.');
         }
 
@@ -692,7 +699,7 @@
     function openFormattingDialog(event) {
         const dialog = document.getElementById('formattingDialog');
         dialog.style.display = 'block';
-        const selectedElement = event.target.closest('.medHlog').querySelector('.session-notes');
+        const selectedElement = event.target;
         dialog.dataset.index = selectedElement.getAttribute('data-index');
         dialog.dataset.element = selectedElement;
     }
@@ -708,10 +715,11 @@
 
     document.addEventListener('click', function (event) {
         const dialog = document.getElementById('formattingDialog');
-        if (!dialog.contains(event.target) && !event.target.classList.contains('ellipsis')) {
+        if (!dialog.contains(event.target)) {
             dialog.style.display = 'none';
         }
     });
 </script>
 </body>
 </html>
+
