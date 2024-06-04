@@ -241,33 +241,33 @@
             color: #fff;
         }
 
-        .session-notes { 
-            outline: none; 
-            border: 1px solid transparent; 
-            padding: 5px; 
-            width: 100%; 
+        .session-notes {
+            outline: none;
+            border: 1px solid transparent;
+            padding: 5px;
+            width: 100%;
             position: relative;
         }
 
-        .session-notes:hover { 
-            border: 1px solid #ccc; 
-            border-radius: 3px; 
+        .session-notes:hover {
+            border: 1px solid #ccc;
+            border-radius: 3px;
         }
 
-        .formatting-dialog { 
-            display: none; 
-            position: fixed; 
-            bottom: 20px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            background-color: #333; 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            border-radius: 5px; 
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-            z-index: 10; 
-            color: #ccc; 
-            width: fit-content; 
+        .formatting-dialog {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            color: #ccc;
+            width: fit-content;
         }
 
         .progress-bar {
@@ -356,6 +356,7 @@
     <div class="card">
         <h2 id="mandalaName"></h2>
         <p class="day-count"></p>
+        <p id="mandalDetails"></p>
         <button id="createSession">Create a Meditation Session</button>
         <div class="progress-bar">
             <div class="progress" id="progressBar"></div>
@@ -560,7 +561,13 @@
         historyContainer.innerHTML = '';
         history.forEach((entry, index) => {
             const entryElement = document.createElement('div');
-            entryElement.textContent = `${entry.name} - Duration: ${entry.duration} days - Start Date: ${entry.creationDate} - End Date: ${entry.endDate} - Completed: ${entry.completed ? 'Yes' : 'Ongoing'}`;
+            entryElement.textContent = `
+                Name: ${entry.name}
+                Duration: ${entry.duration} days
+                Start Date: ${entry.creationDate}
+                End Date: ${entry.endDate}
+                Completed: ${entry.completed ? 'Yes' : 'Ongoing'}
+            `;
             historyContainer.appendChild(entryElement);
         });
     }
@@ -611,11 +618,21 @@
 
         if (mandalaHeaderElement) {
             mandalaHeaderElement.textContent = `${mandalaName} - day ${daysSinceStart} in`;
-                } else {
+            updateProgressBar(daysSinceStart, firstEntry.duration);
+        } else {
             console.error('Element with ID "mandalOngoing" not found.');
         }
 
-        updateProgressBar(daysSinceStart, firstEntry.duration);
+        const mandalDetailsElement = document.getElementById('mandalDetails');
+        if (mandalDetailsElement) {
+            mandalDetailsElement.innerHTML = `
+                Start Date: ${firstEntry.creationDate}<br>
+                End Date: ${firstEntry.endDate}<br>
+                Sessions Completed: ${daysSinceStart} / ${firstEntry.duration}
+            `;
+        } else {
+            console.error('Element with ID "mandalDetails" not found.');
+        }
     }
 
     function updateProgressBar(currentDay, totalDays) {
@@ -698,15 +715,18 @@
 
     function openFormattingDialog(event) {
         const dialog = document.getElementById('formattingDialog');
+        const rect = event.target.getBoundingClientRect();
+        dialog.style.top = `${rect.bottom + window.scrollY}px`;
+        dialog.style.left = `${rect.left + window.scrollX}px`;
         dialog.style.display = 'block';
-        const selectedElement = event.target;
-        dialog.dataset.index = selectedElement.getAttribute('data-index');
-        dialog.dataset.element = selectedElement;
+        dialog.dataset.index = event.target.getAttribute('data-index');
     }
 
     function applyFormat(format) {
         const dialog = document.getElementById('formattingDialog');
-        const element = dialog.dataset.element;
+        const index = dialog.dataset.index;
+        const element = document.querySelector(`.session-notes[data-index="${index}"]`);
+
         if (element) {
             document.execCommand(format, false, null);
             saveSessionNotes({ target: element });
@@ -715,11 +735,10 @@
 
     document.addEventListener('click', function (event) {
         const dialog = document.getElementById('formattingDialog');
-        if (!dialog.contains(event.target)) {
+        if (!dialog.contains(event.target) && !event.target.classList.contains('ellipsis')) {
             dialog.style.display = 'none';
         }
     });
 </script>
 </body>
 </html>
-
