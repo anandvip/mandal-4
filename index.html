@@ -520,29 +520,17 @@
         const history = JSON.parse(localStorage.getItem('meditationHistory')) || [];
         const historyContainer = document.getElementById('meditationHistory');
         historyContainer.innerHTML = '';
-        let currentMandal = JSON.parse(localStorage.getItem('mandalProgress'))[0].name;
         let day = 1;
         history.forEach((entry, index) => {
-            const isCurrentMandal = entry.name === currentMandal;
             const entryElement = document.createElement('div');
             entryElement.classList.add('medHlog');
-            if (isCurrentMandal) {
-                entryElement.innerHTML = `
-                    <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
-                    <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
-                    <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
-                    <span class="session-notes" contenteditable="true" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
-                    <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
-                `;
-            } else {
-                entryElement.innerHTML = `
-                    <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
-                    <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
-                    <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
-                    <span class="session-notes collapsed" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
-                    <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
-                `;
-            }
+            entryElement.innerHTML = `
+                <h3>Day ${day} - ${entry.startDate.split(',')[0]}</h3>
+                <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
+                <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
+                <span class="session-notes" contenteditable="true" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
+                <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
+            `;
             historyContainer.appendChild(entryElement);
             day++;
         });
@@ -550,16 +538,27 @@
         // Add event listeners for session notes
         const sessionNotes = document.querySelectorAll(".session-notes");
         sessionNotes.forEach(note => {
-            note.addEventListener("focus", openFormattingDialog);
             note.addEventListener("blur", saveSessionNotes);
         });
     }
 
+    function saveSessionNotes(event) {
+        const index = event.target.getAttribute('data-index');
+        const notes = event.target.textContent;
+        const meditationHistory = JSON.parse(localStorage.getItem('meditationHistory')) || [];
+        if (meditationHistory[index]) {
+            meditationHistory[index].notes = notes;
+            localStorage.setItem('meditationHistory', JSON.stringify(meditationHistory));
+        }
+    }
+
     function displayMandalHistory() {
         const history = JSON.parse(localStorage.getItem('mandalProgress')) || [];
+        const completedHistory = JSON.parse(localStorage.getItem('completedMandalProgress')) || [];
         const historyContainer = document.getElementById('mandalHistory');
         historyContainer.innerHTML = '';
-        history.forEach((entry, index) => {
+
+        [...history, ...completedHistory].forEach((entry, index) => {
             const entryElement = document.createElement('div');
             entryElement.classList.add('medHlog');
             entryElement.innerHTML = `
@@ -585,6 +584,7 @@
 
     function checkMandalCompletion() {
         const history = JSON.parse(localStorage.getItem('mandalProgress')) || [];
+        const completedMandalHistory = JSON.parse(localStorage.getItem('completedMandalProgress')) || [];
 
         if (history.length === 0) {
             return;
@@ -597,7 +597,10 @@
 
         if (daysSinceStart >= firstEntry.duration) {
             firstEntry.completed = true;
+            completedMandalHistory.push(firstEntry);
+            history.shift();
             localStorage.setItem('mandalProgress', JSON.stringify(history));
+            localStorage.setItem('completedMandalProgress', JSON.stringify(completedMandalHistory));
 
             showToast(`Congratulations! You have completed the Mandal: ${firstEntry.name}. Click here to create a new Mandal.`);
             showIntrusiveToast();
@@ -675,11 +678,14 @@
             completed: false
         };
 
-        localStorage.setItem('mandalProgress', JSON.stringify([mandalDetails]));
+        const mandalProgress = JSON.parse(localStorage.getItem('mandalProgress')) || [];
+        mandalProgress.unshift(mandalDetails);
+        localStorage.setItem('mandalProgress', JSON.stringify(mandalProgress));
 
         showToast(`Mandal created with ${sessionCount} sessions.`);
         hideIntrusiveToast();
         updateMandalaHeaderFromLocalStorage();
+        displayMandalHistory();
     }
 
     function getNextDay() {
@@ -699,48 +705,19 @@
         const userName = localStorage.getItem('userName');
         const mandalProgress = JSON.parse(localStorage.getItem('mandalProgress'));
 
-        if (!userName || !mandalProgress || mandalProgress[0].completed) {
+        if (!userName || !mandalProgress || mandalProgress.length === 0 || mandalProgress[0].completed) {
             showIntrusiveToast();
         } else {
             showToast(`Namaskaram, ${userName}!`);
         }
     }
 
-    function saveSessionNotes(event) {
-        const index = event.target.getAttribute('data-index');
-        const notes = event.target.textContent;
-        const meditationHistory = JSON.parse(localStorage.getItem('meditationHistory')) || [];
-        if (meditationHistory[index]) {
-            meditationHistory[index].notes = notes;
-            localStorage.setItem('meditationHistory', JSON.stringify(meditationHistory));
-        }
-    }
-
-    function openFormattingDialog(event) {
-        const dialog = document.getElementById('formattingDialog');
-        const rect = event.target.getBoundingClientRect();
-        dialog.style.top = `${rect.bottom + window.scrollY}px`;
-        dialog.style.left = `${rect.left + window.scrollX}px`;
-        dialog.style.display = 'block';
-        dialog.dataset.index = event.target.getAttribute('data-index');
-    }
-
-    function applyFormat(format) {
-        const dialog = document.getElementById('formattingDialog');
-        const index = dialog.dataset.index;
-        const element = document.querySelector(`.session-notes[data-index="${index}"]`);
-
-        if (element) {
-            document.execCommand(format, false, null);
-            saveSessionNotes({ target: element });
-        }
-    }
-
-    document.addEventListener('click', function (event) {
-        const dialog = document.getElementById('formattingDialog');
-        if (!dialog.contains(event.target) && !event.target.classList.contains('ellipsis')) {
-            dialog.style.display = 'none';
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        checkLocalStorage();
+        checkMandalCompletion();
+        updateMandalaHeaderFromLocalStorage();
+        displayMeditationHistory();
+        displayMandalHistory();
     });
 </script>
 </body>
