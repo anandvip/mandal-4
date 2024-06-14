@@ -529,7 +529,7 @@
                 <div class="session-item">Morning: ${entry.startDate.split(',')[1]} - ${entry.endDate.split(',')[1]}</div>
                 <div class="session-item">Completed: ${entry.completed ? 'Yes' : 'No'}</div>
                 <span class="session-notes" contenteditable="true" data-index="${index}" placeholder="Your session notes here">${entry.notes || "Your session notes here"}</span>
-                <div class="ellipsis" onclick="openFormattingDialog(event)">...</div>
+                
             `;
             historyContainer.appendChild(entryElement);
             day++;
